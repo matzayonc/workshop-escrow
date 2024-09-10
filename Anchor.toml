@@ -1,0 +1,18 @@
+[toolchain]
+
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+escrow = "Ajth9mFMKb5n4Fc3FrzSbG6vv4u69xcLJHy2A5TjAE9P"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Localnet"
+wallet = "/home/mateo/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
