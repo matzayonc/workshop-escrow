@@ -16,6 +16,11 @@ pub struct MakeOffer<'info> {
     )]
     offer: Account<'info, Offer>,
 
+    /// CHECK:
+    pub token_mint_a: AccountInfo<'info>,
+    /// CHECK:
+    pub token_mint_b: AccountInfo<'info>,
+
     pub system_program: Program<'info, System>
 }
 
@@ -23,8 +28,8 @@ pub fn make_offer(ctx: Context<MakeOffer>, id: u64, wanted_amount: u64) -> Resul
     ctx.accounts.offer.set_inner(Offer {
         id, 
         maker: ctx.accounts.maker.key(), 
-        token_mint_a: Pubkey::default(), 
-        token_mint_b: Pubkey::default(),
+        token_mint_a: ctx.accounts.token_mint_a.key(), 
+        token_mint_b: ctx.accounts.token_mint_b.key(),
         token_b_wanted_amount: wanted_amount, 
         bump: ctx.bumps.offer 
     });

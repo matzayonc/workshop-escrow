@@ -46,12 +46,17 @@ describe("escrow", () => {
   });
 
   it("Can create a new escrow account", async () => {
+    const tokenMintA = new Keypair().publicKey;
+    const tokenMintB = new Keypair().publicKey;
+
     // Call make offer instruction and create a new offer account
     const tx = await program.methods
       .makeOffer(new BN(0), new BN(100))
       .accounts({
         offer: offerAddress,
         maker: maker.publicKey,
+        tokenMintA,
+        tokenMintB,
       })
       .signers([maker])
       .rpc();
