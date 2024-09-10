@@ -12,8 +12,12 @@ pub struct TakeOffer<'info> {
 
     #[account(mut, close = maker,
         has_one = maker,
-        seeds = [b"offer", maker.key().as_ref()],
+        seeds = [b"offer", maker.key().as_ref(), &offer.id.to_le_bytes()],
         bump = offer.bump
     )]
     offer: Account<'info, Offer>,
+}
+
+pub fn take_offer(ctx: Context<TakeOffer>) -> Result<()> {
+    Ok(())
 }

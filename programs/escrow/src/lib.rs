@@ -22,4 +22,8 @@ pub mod escrow {
     pub fn make_offer(ctx: Context<MakeOffer>, id: u64, wanted_amount: u64) -> Result<()> {
         make_offer::make_offer(ctx, id, wanted_amount)
     }
+
+    pub fn take_offer(ctx: Context<TakeOffer>) -> Result<()> {
+        take_offer::take_offer(ctx)
+    }
 }

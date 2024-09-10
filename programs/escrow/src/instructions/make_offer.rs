@@ -3,6 +3,7 @@ use anchor_lang::{prelude::*, Bump};
 use crate::{Offer, ANCHOR_DESCRIMINATOR, OFFER_SEED};
 
 #[derive(Accounts)]
+#[instruction(id: u64)]
 pub struct MakeOffer<'info> {
     #[account(mut)]
     pub maker: Signer<'info>,
@@ -10,7 +11,7 @@ pub struct MakeOffer<'info> {
     #[account(init, 
         payer = maker, 
         space = ANCHOR_DESCRIMINATOR + Offer::INIT_SPACE,
-        seeds = [OFFER_SEED, maker.key().as_ref()],
+        seeds = [OFFER_SEED, maker.key().as_ref(), &id.to_le_bytes()],
         bump
     )]
     offer: Account<'info, Offer>,
