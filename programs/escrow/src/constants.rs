@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 
-#[constant]
+// #[constant]
 pub const SEED: &str = "anchor";
 
-#[constant]
+// #[constant]
 pub const OFFER_SEED: &[u8] = b"offer";
 
-#[constant]
+// #[constant]
 pub const ANCHOR_DESCRIMINATOR: usize = 8;
