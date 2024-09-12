@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN, Program } from "@coral-xyz/anchor";
 import { Escrow } from "../target/types/escrow";
-import { makeKeypairs } from "@solana-developers/helpers";
+import { confirmTransaction, makeKeypairs } from "@solana-developers/helpers";
 import { assert } from "chai";
 import {
   MINT_SIZE,
@@ -21,6 +21,7 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
+import { randomBytes } from "crypto";
 
 describe("escrow", () => {
   // Configure the client to use the local cluster.
@@ -38,6 +39,13 @@ describe("escrow", () => {
     ],
     program.programId
   )[0];
+
+  const accounts: Record<string, PublicKey> = {
+    tokenProgram: TOKEN_PROGRAM_ID,
+  };
+
+  const tokenAOfferedAmount = new BN(1_000_000);
+  const tokenBWantedAmount = new BN(1_000_000);
 
   before(
     "Creates Alice and Bob accounts, 2 token mints, and associated token accounts for both tokens for both users",
@@ -142,14 +150,14 @@ describe("escrow", () => {
       ]);
 
       // // Save the accounts for later use
-      // accounts.maker = alice.publicKey;
-      // accounts.taker = bob.publicKey;
-      // accounts.tokenMintA = tokenMintA.publicKey;
-      // accounts.makerTokenAccountA = aliceTokenAccountA;
-      // accounts.takerTokenAccountA = bobTokenAccountA;
-      // accounts.tokenMintB = tokenMintB.publicKey;
-      // accounts.makerTokenAccountB = aliceTokenAccountB;
-      // accounts.takerTokenAccountB = bobTokenAccountB;
+      accounts.maker = alice.publicKey;
+      accounts.taker = bob.publicKey;
+      accounts.tokenMintA = tokenMintA.publicKey;
+      accounts.makerTokenAccountA = aliceTokenAccountA;
+      accounts.takerTokenAccountA = bobTokenAccountA;
+      accounts.tokenMintB = tokenMintB.publicKey;
+      accounts.makerTokenAccountB = aliceTokenAccountB;
+      accounts.takerTokenAccountB = bobTokenAccountB;
     }
   );
 
@@ -160,27 +168,52 @@ describe("escrow", () => {
   });
 
   it("Can create a new escrow account", async () => {
-    const tokenMintA = new Keypair().publicKey;
-    const tokenMintB = new Keypair().publicKey;
+    // Pick a random ID for the offer we'll make
+    const offerId = getRandomBigNumber();
 
-    // Call make offer instruction and create a new offer account
-    const tx = await program.methods
-      .makeOffer(new BN(0), new BN(100))
-      .accounts({
-        offer: offerAddress,
-        maker: alice.publicKey,
-        tokenMintA,
-        tokenMintB,
-      })
+    // Then determine the account addresses we'll use for the offer and the vault
+    const offer = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("offer"),
+        accounts.maker.toBuffer(),
+        offerId.toArrayLike(Buffer, "le", 8),
+      ],
+      program.programId
+    )[0];
+
+    const vault = getAssociatedTokenAddressSync(
+      accounts.tokenMintA,
+      offer,
+      true,
+      TOKEN_PROGRAM_ID
+    );
+
+    accounts.offer = offer;
+    accounts.vault = vault;
+
+    const transactionSignature = await program.methods
+      .makeOffer(offerId, tokenAOfferedAmount)
+      .accounts({ ...accounts })
       .signers([alice])
       .rpc();
 
-    // Fetch the created offer account
-    const createdOffer = await program.account.offer.fetch(offerAddress);
+    await confirmTransaction(program.provider.connection, transactionSignature);
 
-    assert.isNotNull(createdOffer);
-    assert.equal(createdOffer.tokenBWantedAmount.toNumber(), 100);
-    assert.equal(createdOffer.maker.toBase58(), alice.publicKey.toBase58());
+    // Check our vault contains the tokens offered
+    const vaultBalanceResponse =
+      await program.provider.connection.getTokenAccountBalance(vault);
+    const vaultBalance = new BN(vaultBalanceResponse.value.amount);
+
+    // Check our Offer account contains the correct data
+    const offerAccount = await program.account.offer.fetch(offer);
+
+    assert(offerAccount.maker.equals(alice.publicKey));
+    assert(offerAccount.tokenMintA.equals(accounts.tokenMintA));
+    assert(offerAccount.tokenMintB.equals(accounts.tokenMintB));
+    assert(offerAccount.tokenBWantedAmount.eq(tokenBWantedAmount));
+
+    // TODO: Next week
+    // assert.equal(vaultBalance.toNumber(), tokenAOfferedAmount.toNumber());
   });
 
   it("Can take an offer", async () => {
@@ -201,6 +234,11 @@ describe("escrow", () => {
 
     assert.isNull(createdOffer);
   });
-});
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+  const getRandomBigNumber = (size: number = 8) => {
+    return new BN(randomBytes(size));
+  };
+});
