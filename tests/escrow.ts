@@ -194,12 +194,12 @@ describe("escrow", () => {
     accounts.offer = offer;
     accounts.vault = vault;
 
-    const balance_a_before =
+    const balance_maker_a_before =
       await program.provider.connection.getTokenAccountBalance(
         accounts.makerTokenAccountA
       );
 
-    assert.equal(balance_a_before.value.amount, "1000000000");
+    assert.equal(balance_maker_a_before.value.amount, "1000000000");
 
     const transactionSignature = await program.methods
       .makeOffer(offerId, tokenAOfferedAmount, tokenBWantedAmount)
@@ -209,12 +209,15 @@ describe("escrow", () => {
 
     await confirmTransaction(program.provider.connection, transactionSignature);
 
-    const balance_a_after =
+    const balance_maker_a_after =
       await program.provider.connection.getTokenAccountBalance(
         accounts.makerTokenAccountA
       );
+    const balance_vault_a_after =
+      await program.provider.connection.getTokenAccountBalance(accounts.vault);
 
-    assert.equal(balance_a_after.value.amount, "999000000");
+    assert.equal(balance_maker_a_after.value.amount, "999000000");
+    assert.equal(balance_vault_a_after.value.amount, "1000000");
 
     // Check our vault contains the tokens offered
     const vaultBalanceResponse =
@@ -237,6 +240,13 @@ describe("escrow", () => {
     // Call take offer instruction
     await sleep(5000);
 
+    const balance_taker_b_before =
+      await program.provider.connection.getTokenAccountBalance(
+        accounts.takerTokenAccountB
+      );
+
+    assert.equal(balance_taker_b_before.value.amount, "1000000000");
+
     const tx = await program.methods
       .takeOffer()
       .accounts({
@@ -254,11 +264,23 @@ describe("escrow", () => {
       .signers([bob])
       .rpc();
 
-    const createdOffer = await program.account.offer.fetchNullable(
+    const balance_taker_b_after =
+      await program.provider.connection.getTokenAccountBalance(
+        accounts.takerTokenAccountB
+      );
+    const balance_maker_b_after =
+      await program.provider.connection.getTokenAccountBalance(
+        accounts.makerTokenAccountB
+      );
+
+    assert.equal(balance_taker_b_after.value.amount, "999000000");
+    assert.equal(balance_maker_b_after.value.amount, "1000000");
+
+    const deletedOffer = await program.account.offer.fetchNullable(
       offerAddress
     );
 
-    assert.isNull(createdOffer);
+    assert.isNull(deletedOffer);
   });
 
   const sleep = (ms: number) =>

@@ -60,3 +60,20 @@ pub struct TakeOffer<'info> {
 pub fn take_offer(ctx: Context<TakeOffer>) -> Result<()> {
     Ok(())
 }
+
+pub fn send_wanted_tokens(ctx: &Context<TakeOffer>) -> Result<()> {
+    let transfer_accounts = TransferChecked {
+        from: ctx.accounts.taker_token_account_b.to_account_info(),
+        mint: ctx.accounts.token_mint_b.to_account_info(),
+        to: ctx.accounts.maker_token_account_b.to_account_info(),
+        authority: ctx.accounts.taker.to_account_info(),
+    };
+
+    let cpi_context = CpiContext::new(
+        ctx.accounts.token_program.to_account_info(),
+        transfer_accounts,
+    );
+
+    let amount = ctx.accounts.offer.token_b_wanted_amount;
+    transfer_checked(cpi_context, amount, ctx.accounts.token_mint_a.decimals)
+}
