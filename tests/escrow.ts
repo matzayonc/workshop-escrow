@@ -30,6 +30,9 @@ describe("escrow", () => {
   const program = anchor.workspace.Escrow as Program<Escrow>;
   const [alice, bob, tokenMintA, tokenMintB] = makeKeypairs(4);
 
+  const TOKEN_PROGRAM: typeof TOKEN_2022_PROGRAM_ID | typeof TOKEN_PROGRAM_ID =
+    TOKEN_2022_PROGRAM_ID;
+
   const offerId = new BN(0);
   const offerAddress = PublicKey.findProgramAddressSync(
     [
@@ -41,10 +44,8 @@ describe("escrow", () => {
   )[0];
 
   const accounts: Record<string, PublicKey> = {
-    tokenProgram: TOKEN_PROGRAM_ID,
+    tokenProgram: TOKEN_PROGRAM,
   };
-
-  let tokenA = Mint;
 
   const tokenAOfferedAmount = new BN(1_000_000);
   const tokenBWantedAmount = new BN(1_000_000);
@@ -64,7 +65,7 @@ describe("escrow", () => {
               mint.publicKey,
               keypair.publicKey,
               false,
-              TOKEN_PROGRAM_ID
+              TOKEN_PROGRAM
             )
           )
         )
@@ -95,7 +96,7 @@ describe("escrow", () => {
           newAccountPubkey: mint.publicKey,
           lamports: minimumLamports,
           space: MINT_SIZE,
-          programId: TOKEN_PROGRAM_ID,
+          programId: TOKEN_PROGRAM,
         })
       );
 
@@ -117,14 +118,14 @@ describe("escrow", () => {
           6,
           mintDetails.authority,
           null,
-          TOKEN_PROGRAM_ID
+          TOKEN_PROGRAM
         ),
         createAssociatedTokenAccountIdempotentInstruction(
           program.provider.publicKey,
           mintDetails.ata,
           mintDetails.authority,
           mintDetails.mint,
-          TOKEN_PROGRAM_ID
+          TOKEN_PROGRAM
         ),
         createMintToInstruction(
           mintDetails.mint,
@@ -132,7 +133,7 @@ describe("escrow", () => {
           mintDetails.authority,
           1_000_000_000,
           [],
-          TOKEN_PROGRAM_ID
+          TOKEN_PROGRAM
         ),
       ]);
 
@@ -187,18 +188,18 @@ describe("escrow", () => {
       accounts.tokenMintA,
       offer,
       true,
-      TOKEN_PROGRAM_ID
+      TOKEN_PROGRAM
     );
 
     accounts.offer = offer;
     accounts.vault = vault;
 
-    // const balance_a_before =
-    //   await program.provider.connection.getTokenAccountBalance(
-    //     accounts.makerTokenAccountA
-    //   );
+    const balance_a_before =
+      await program.provider.connection.getTokenAccountBalance(
+        accounts.makerTokenAccountA
+      );
 
-    // assert.equal(balance_a_before.value.amount, "1000000000");
+    assert.equal(balance_a_before.value.amount, "1000000000");
 
     const transactionSignature = await program.methods
       .makeOffer(offerId, tokenAOfferedAmount, tokenBWantedAmount)
@@ -207,6 +208,13 @@ describe("escrow", () => {
       .rpc();
 
     await confirmTransaction(program.provider.connection, transactionSignature);
+
+    const balance_a_after =
+      await program.provider.connection.getTokenAccountBalance(
+        accounts.makerTokenAccountA
+      );
+
+    assert.equal(balance_a_after.value.amount, "999000000");
 
     // Check our vault contains the tokens offered
     const vaultBalanceResponse =
@@ -241,6 +249,7 @@ describe("escrow", () => {
         makerTokenAccountB: accounts.makerTokenAccountB,
         vault: accounts.vault,
         offer: accounts.offer,
+        tokenProgram: TOKEN_PROGRAM,
       })
       .signers([bob])
       .rpc();
