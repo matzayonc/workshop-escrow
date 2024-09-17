@@ -214,16 +214,24 @@ describe("escrow", () => {
 
     // TODO: Next week
     // assert.equal(vaultBalance.toNumber(), tokenAOfferedAmount.toNumber());
-  });
+    // });
 
-  it("Can take an offer", async () => {
+    // it("Can take an offer", async () => {
     // Call take offer instruction
+    await sleep(5000);
+
     const tx = await program.methods
       .takeOffer()
       .accounts({
-        offer: offerAddress,
         taker: bob.publicKey,
         maker: alice.publicKey,
+        tokenMintA: accounts.tokenMintA,
+        tokenMintB: accounts.tokenMintB,
+        takerTokenAccountA: accounts.takerTokenAccountA,
+        takerTokenAccountB: accounts.takerTokenAccountB,
+        makerTokenAccountB: accounts.makerTokenAccountB,
+        vault: accounts.vault,
+        offer: accounts.offer,
       })
       .signers([bob])
       .rpc();
