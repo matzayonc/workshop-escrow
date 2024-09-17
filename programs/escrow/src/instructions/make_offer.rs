@@ -1,4 +1,4 @@
-use anchor_lang::{prelude::*, Bump};
+use anchor_lang::{context, prelude::*, Bump};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
@@ -47,6 +47,7 @@ pub struct MakeOffer<'info> {
 }
 
 pub fn make_offer(ctx: Context<MakeOffer>, id: u64, wanted_amount: u64) -> Result<()> {
+
     ctx.accounts.offer.set_inner(Offer {
         id,
         maker: ctx.accounts.maker.key(),
@@ -58,3 +59,23 @@ pub fn make_offer(ctx: Context<MakeOffer>, id: u64, wanted_amount: u64) -> Resul
 
     Ok(())
 }
+
+pub fn send_tokens_to_vault(
+    ctx: &Context<MakeOffer>,
+    amount: u64,
+) -> Result<()> {
+
+    let transfer_accounts = TransferChecked {
+        from: ctx.accounts.maker_token_account_a.to_account_info(),
+        mint: ctx.accounts.token_mint_a.to_account_info(),
+        to: ctx.accounts.vault.to_account_info(),
+        authority: ctx.accounts.maker.to_account_info(),
+    };
+
+    let cpi_context = CpiContext::new(ctx.accounts.token_program.to_account_info(), transfer_accounts);
+
+    transfer_checked(cpi_context, amount, ctx.accounts.token_mint_a.decimals)?;
+
+    Ok(())
+}
+

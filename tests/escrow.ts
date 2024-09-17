@@ -44,6 +44,8 @@ describe("escrow", () => {
     tokenProgram: TOKEN_PROGRAM_ID,
   };
 
+  let tokenA = Mint;
+
   const tokenAOfferedAmount = new BN(1_000_000);
   const tokenBWantedAmount = new BN(1_000_000);
 
@@ -191,8 +193,15 @@ describe("escrow", () => {
     accounts.offer = offer;
     accounts.vault = vault;
 
+    // const balance_a_before =
+    //   await program.provider.connection.getTokenAccountBalance(
+    //     accounts.makerTokenAccountA
+    //   );
+
+    // assert.equal(balance_a_before.value.amount, "1000000000");
+
     const transactionSignature = await program.methods
-      .makeOffer(offerId, tokenAOfferedAmount)
+      .makeOffer(offerId, tokenAOfferedAmount, tokenBWantedAmount)
       .accounts({ ...accounts })
       .signers([alice])
       .rpc();

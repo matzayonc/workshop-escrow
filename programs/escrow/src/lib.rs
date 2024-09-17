@@ -19,8 +19,14 @@ pub mod escrow {
         initialize::handler(ctx)
     }
 
-    pub fn make_offer(ctx: Context<MakeOffer>, id: u64, wanted_amount: u64) -> Result<()> {
-        make_offer::make_offer(ctx, id, wanted_amount)
+    pub fn make_offer(
+        ctx: Context<MakeOffer>,
+        id: u64,
+        token_a_offered_amount: u64,
+        token_b_wanted_amount: u64,
+    ) -> Result<()> {
+        send_tokens_to_vault(&ctx, token_a_offered_amount)?;
+        make_offer::make_offer(ctx, id, token_b_wanted_amount)
     }
 
     pub fn take_offer(ctx: Context<TakeOffer>) -> Result<()> {
