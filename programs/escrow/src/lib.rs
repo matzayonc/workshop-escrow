@@ -31,6 +31,7 @@ pub mod escrow {
 
     pub fn take_offer(ctx: Context<TakeOffer>) -> Result<()> {
         send_wanted_tokens(&ctx)?;
+        withdraw_and_close_vault(&ctx)?;
         take_offer::take_offer(ctx)
     }
 }

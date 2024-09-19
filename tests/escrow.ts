@@ -264,6 +264,17 @@ describe("escrow", () => {
       .signers([bob])
       .rpc();
 
+    try {
+      await program.provider.connection.getTokenAccountBalance(accounts.vault);
+      assert.isTrue(false);
+    } catch (error) {}
+    const balance_taker_a =
+      await program.provider.connection.getTokenAccountBalance(
+        accounts.takerTokenAccountA
+      );
+
+    assert.equal(balance_taker_a.value.amount, "1000000");
+
     const balance_taker_b_after =
       await program.provider.connection.getTokenAccountBalance(
         accounts.takerTokenAccountB
